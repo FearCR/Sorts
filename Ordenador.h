@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
+#include <memory>
 #include "time.h"
 using namespace std;
 
@@ -138,31 +139,7 @@ private:
 		mx = arr[i];
 		return mx;
 	};
-	void conteo(int * arreglo, int tamano, int digito)
-	{
-		int finalAux[tamano];
-		int i, c[10] = {0};
 
-		// se arma el arreglo C
-		for (i = 0; i < tamano; i++){
-			c[(arreglo[i]/digito)%10 ]++;
-		}
-		//en el arreglo C se arma C', es decir el acumulado
-		for (i = 1; i < 10; i++){
-			c[i] += c[i - 1];
-		}
-		// "Paso Magico"
-		// se ordena desde el ultimo elemento hasta el primero usando el arreglo C', el acumulado.
-		for (i = tamano - 1; i >= 0; i--)
-		{
-			finalAux[c[ (arreglo[i]/digito)%10 ] - 1] = arreglo[i];
-			c[ (arreglo[i]/digito)%10 ]--;
-		}
-
-		for (i = 0; i < tamano; i++){
-			arreglo[i] = finalAux[i];
-		}
-	};
 
 
 public:
@@ -221,14 +198,32 @@ public:
 		quicksortRecursivo(arreglo,0,tamano-1);
 	};
 
-	void radixsort(int * arreglo, int tamano){
-		// buscando el mayor se sabe cuantos digitos hay en el numero,
-		int m = getMayor(arreglo, tamano);
-
-		// para cada digito, iniciando por el menos significativo usa el algoritmo ordenamiento por conteo
-		// el digito se cuenta con unidades, decenas, centenas etc.
-		for (int digito = 1; m/digito > 0; digito *= 10){
-			conteo(arreglo, tamano, digito);
+	void radixsort(int* arreglo, int tamano){
+		auto bin = make_unique<int[]>(tamano);
+		int* bin_ptr = bin.get();
+		auto m_bin = [](int x, int i){
+			return (static_cast<unsigned int>(x) >> i*8) & 0xFF;
+		};
+		for ( int j = 0; j < 4; j++ ) {
+			int count[256] = {};
+			int inicio;
+			//se construye C y el acumulado
+			for (int i = 0; i < tamano; i++ ){
+				count[m_bin(arreglo[i], j)]++;
+			}
+			if(j!=3){
+				inicio=0;
+			}else{
+				inicio=128;
+			}
+			for ( int i = 1+inicio; i < 256+inicio; i++ ){
+				count[i % 256] += count[(i-1) % 256];
+			}
+			//paso magico
+			for (int i = tamano; i > 0; i-- ){
+				bin_ptr[--count[m_bin(arreglo[i-1], j)]] = arreglo[i-1];
+			}
+			swap(arreglo, bin_ptr);
 		}
 	};
 
